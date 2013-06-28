@@ -1017,12 +1017,17 @@ void ConfigFile::processROSInterfaces(const xmlpp::Node* node){
 			rosInterface.type=ROSInterfaceInfo::DVLSensorToROS;
 		} else if(child->get_name()=="multibeamSensorToLaserScan"){
 			rosInterface.type=ROSInterfaceInfo::multibeamSensorToLaserScan;
+		} else if(child->get_name()=="contactSensorToROS"){
+			rosInterface.type=ROSInterfaceInfo::contactSensorToROS;
 		}
 
 
 		if (rosInterface.type!=ROSInterfaceInfo::Unknown) {
 			processROSInterface(child,rosInterface);
-			ROSInterfaces.push_back(rosInterface);
+			if(rosInterface.type!=ROSInterfaceInfo::contactSensorToROS)
+  			  ROSInterfaces.push_back(rosInterface);
+			else
+ 			  ROSPhysInterfaces.push_back(rosInterface);	
 		}
 	}
 }

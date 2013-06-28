@@ -19,6 +19,7 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <sensor_msgs/LaserScan.h>
+#include <geometry_msgs/WrenchStamped.h>
 #include <underwater_sensor_msgs/Pressure.h>
 #include <underwater_sensor_msgs/DVL.h>
 
@@ -744,3 +745,183 @@ void  MultibeamSensorToROS::publish() {
 }
 	
  MultibeamSensorToROS::~MultibeamSensorToROS() {}
+
+
+
+contactSensorToROS::contactSensorToROS(osg::Group *rootNode,BulletPhysics * physics,std::string target, std::string topic, int rate): ROSPublisherInterface(topic,rate) {
+this->rootNode=rootNode;
+this->physics=physics;
+this->target=target;
+}
+
+void   contactSensorToROS::createPublisher(ros::NodeHandle &nh) {
+  ROS_INFO("contactSensorToROS publisher on topic %s",topic.c_str());
+  pub_ = nh.advertise<geometry_msgs::WrenchStamped>(topic, 1);
+}
+
+void   contactSensorToROS::publish() {
+  std::list<Collision> collisionList;
+
+  for(int i=0;i<physics->getNumCollisions();i++){
+    btPersistentManifold * col = physics->getCollision(i);
+
+    //Get objects colliding
+    btRigidBody* obA = static_cast<btRigidBody*>(col->getBody0());
+    btRigidBody* obB = static_cast<btRigidBody*>(col->getBody1());  
+
+    //Check if target is involved in collision
+    CollisionDataType * data=(CollisionDataType *)obA->getUserPointer();  
+    CollisionDataType * data2=(CollisionDataType *)obB->getUserPointer();
+    int inv=0;
+
+    //WE ARE ASSUMING TARGET IS A VEHICLE
+    if(data2->getObjectName()==target){
+      CollisionDataType * aux = data;
+      data=data2;
+      data2=aux;
+      inv=1;
+    }
+    if(data->getObjectName()==target){
+      int numContacts= col->getNumContacts();
+
+      //Look for collision in collisionList
+      std::list<Collision>::iterator elem=collisionList.begin();
+      int located=0;
+      while(elem!=collisionList.end()){
+	if(elem->name==data->name && elem->collisionWith == data2->getObjectName()){
+	  located=1;
+	  break;
+	}
+        elem++;
+      }
+      
+      if(!located){
+	Collision element;
+	element.name=data->name;
+	element.collisionWith=data2->getObjectName();
+	if(!inv){
+	  element.linearVel=obA->getLinearVelocity();
+	  element.angularVel=obA->getAngularVelocity();
+	}
+	else{
+	  element.linearVel=obB->getLinearVelocity();
+	  element.angularVel=obB->getAngularVelocity();
+	}
+	collisionList.push_back(element);
+	elem=collisionList.end();
+	--elem;
+      }
+
+      for (int j=0;j<numContacts ;j++){
+	btManifoldPoint pt = col->getContactPoint(j);
+	//std::cerr<<pt.getAppliedImpulse()<<std::endl;  //Applied impulse give weird results, so we calculate our own impulse
+	if (pt.getDistance()<0.f){ //Check contact points are near from obstacle and save data related
+	  if(!inv){
+	    elem->contactList.push_back(pt.getPositionWorldOnA());
+	    elem->contactList2.push_back(pt.getPositionWorldOnB());
+	  }
+	  else{
+	    elem->contactList.push_back(pt.getPositionWorldOnB());
+	    elem->contactList2.push_back(pt.getPositionWorldOnA());
+	  }
+          //std::cout<<i<<": "<<data->getObjectName()<<"("<<data->name<<") vs "<<data2->getObjectName()<<std::endl;
+        }
+      }
+    }
+  }
+  int published=0;
+  for(std::list<Collision>::iterator i=collisionList.begin();i!=collisionList.end() && i->name=="base_link";i++){ //Get collision direction and speeds  //By now we only consider base_link collision, in next versions arm collisions should be considered
+    if(i->contactList.size()>=1){ //We can get vector normals and get a normal average (it requires world positions instead of local)
+       btVector3 avgDirection(0,0,0);
+       btVector3 avgPoint(0,0,0);
+       for(std::list<btVector3>::iterator point=i->contactList.begin(), point2=i->contactList2.begin();point!=i->contactList.end() && point2!=i->contactList.end();point++,point2++){
+	  avgDirection+=(*point - *point2).normalize();
+	  avgPoint+=(*point);
+	}
+	avgPoint/=i->contactList.size();
+	avgDirection.normalize();
+        osg::Matrixd* pos =getWorldCoords(findRN(target+"/"+i->name,rootNode));
+	//std::cout<<"avgDirection: "<<avgDirection.x()<<" "<<avgDirection.y()<<" "<<avgDirection.z()<<std::endl;
+	//std::cout<<"avgPoint: "<<avgPoint.x()<<" "<<avgPoint.y()<<" "<<avgPoint.z()<<std::endl;
+	//std::cout<<"rotate: "<<pos->getRotate().x()<<" "<<pos->getRotate().y()<<" "<<pos->getRotate().z()<<std::endl;
+	//std::cout<<"Wcoords"<<pos->getTrans().x()<<" "<<pos->getTrans().y()<<" "<<pos->getTrans().z()<<" "<<std::endl;
+	osg::Vec3 localDir=(pos->getRotate().inverse())*osg::Vec3(avgDirection.x(),avgDirection.y(),avgDirection.z());
+	osg::Vec3 localPos=(pos->getRotate().inverse())*(osg::Vec3(avgPoint.x(),avgPoint.y(),avgPoint.z())-pos->getTrans());
+	osg::Vec3 localLinVel=(pos->getRotate().inverse())*osg::Vec3(i->linearVel.x(),i->linearVel.y(),i->linearVel.z());
+	osg::Vec3 localAngVel=(pos->getRotate().inverse())*osg::Vec3(i->angularVel.x(),i->angularVel.y(),i->angularVel.z());
+	double velColDir=localDir*localLinVel+0.00001;
+	//std::cerr<<"localDir: "<<localDir.x()<<" "<<localDir.y()<<" "<<localDir.z()<<" "<<std::endl;
+	//std::cout<<"localPos: "<<localPos.x()<<" "<<localPos.y()<<" "<<localPos.z()<<" "<<std::endl;
+	//std::cerr<<"locallinearVel: "<<localLinVel.x()<<" "<<localLinVel.y()<<" "<<localLinVel.z()<<" "<<std::endl;
+	//std::cout<<"localangularVel: "<<localAngVel.x()<<" "<<localAngVel.y()<<" "<<localAngVel.z()<<" "<<std::endl;
+	//std::cout<<"Speed collision Direction: "<<velColDir<<std::endl;
+
+	double espReco=0.01;  //This value modifies the elasticity of the object (distance travelled while colliding)
+	double durChoque=espReco/(velColDir/2); //Tick de bullet?
+	double fuerza=98*velColDir/durChoque;
+	//std::cerr<<"Fuerza: "<<fuerza<<std::endl;
+
+	geometry_msgs::WrenchStamped msg;
+	msg.header.stamp = getROSTime();
+    	msg.header.frame_id ="base_link";
+
+	msg.wrench.force.x=fuerza*localDir.x();
+	msg.wrench.force.y=fuerza*localDir.y();
+	msg.wrench.force.z=fuerza*localDir.z();
+
+	/*msg.wrench.force.x=fuerza*localDir.x()*-1;
+	msg.wrench.force.y=fuerza*localDir.z()*-1;
+	msg.wrench.force.z=fuerza*localDir.y()*-1;*/
+
+
+	osg::Vec3 torque=localPos^(localDir*fuerza);
+
+	//std::cerr<<"Torque"<<torque.x()<<" "<<torque.y()<<" "<<torque.z()<<" "<<std::endl;
+
+	msg.wrench.torque.x=torque.x();
+	msg.wrench.torque.y=torque.y();
+	msg.wrench.torque.z=torque.z();
+	published=1;
+
+	pub_.publish(msg);
+
+    }
+    //We can fit a plane and get collision direction as normal vector but this method gets worser results than the above one (commented for further tests)
+    /*if(i->contactList.size()>=3){
+      pcl::PointCloud<pcl::PointXYZ> cloud;
+      cloud.width  = i->contactList.size();
+      cloud.height = 1;
+      cloud.points.resize (cloud.width * cloud.height);
+      int j=0;
+      for(std::list<btVector3>::iterator point=i->contactList.begin();point!=i->contactList.end();point++,j++){
+	cloud.points[j].x=point->x();
+	cloud.points[j].y=point->y();
+	cloud.points[j].z=point->z();
+      }
+      Eigen::Vector4f vec;
+      float curvature;
+      pcl::computePointNormal (cloud, vec, curvature);
+      std::cout<<"Plano: "<<vec[0]<<" "<<vec[1]<<" "<<vec[2]<<" "<<vec[3]<<" curva: "<<curvature<<std::endl;
+    }*/
+   //std::cout<<i->name<<" vs "<<i->collisionWith<<" "<<i->contactList.size()<<std::endl;
+  }
+  if(!published){
+	//No collision
+	geometry_msgs::WrenchStamped msg;
+	msg.header.stamp = getROSTime();
+    	msg.header.frame_id ="base_link";
+
+	msg.wrench.force.x=0;
+	msg.wrench.force.y=0;
+	msg.wrench.force.z=0;
+
+	msg.wrench.torque.x=0;
+	msg.wrench.torque.y=0;
+	msg.wrench.torque.z=0;
+
+	pub_.publish(msg);
+
+  }
+}
+	
+  contactSensorToROS::~ contactSensorToROS() {}

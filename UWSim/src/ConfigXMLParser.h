@@ -26,7 +26,7 @@ using namespace std;
 #include <list>
 
 struct ROSInterfaceInfo{
-  typedef enum {Unknown, ROSOdomToPAT, PATToROSOdom, ROSJointStateToArm, ArmToROSJointState, VirtualCameraToROSImage, RangeSensorToROSRange,ROSImageToHUD, ROSTwistToPAT, ROSPoseToPAT, ImuToROSImu, PressureSensorToROS, GPSSensorToROS, DVLSensorToROS, RangeImageSensorToROSImage,multibeamSensorToLaserScan} type_t;
+  typedef enum {Unknown, ROSOdomToPAT, PATToROSOdom, ROSJointStateToArm, ArmToROSJointState, VirtualCameraToROSImage, RangeSensorToROSRange,ROSImageToHUD, ROSTwistToPAT, ROSPoseToPAT, ImuToROSImu, PressureSensorToROS, GPSSensorToROS, DVLSensorToROS, RangeImageSensorToROSImage,multibeamSensorToLaserScan, contactSensorToROS} type_t;
   string topic, infoTopic, targetName;
   type_t type; //Type of ROSInterface
   int rate; //if it's necessary
@@ -251,6 +251,7 @@ public:
   list <Vehicle> vehicles;
   list <Object> objects;
   list <ROSInterfaceInfo> ROSInterfaces;
+  list <ROSInterfaceInfo> ROSPhysInterfaces; //Physics interfaces are loaded after physics
   PhysicsWater physicsWater;
 
   ConfigFile(const std::string &fName);

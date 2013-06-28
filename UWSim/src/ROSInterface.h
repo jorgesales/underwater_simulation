@@ -26,6 +26,7 @@
 #include "HUDCamera.h"
 #include "MultibeamSensor.h"
 #include "UWSimUtils.h"
+#include "BulletPhysics.h"
 
 //OSG
 #include <OpenThreads/Thread>
@@ -361,6 +362,29 @@ public:
 	void publish();
 	
 	~MultibeamSensorToROS();
-};	
+};
+
+class contactSensorToROS : public ROSPublisherInterface {
+        struct Collision{
+	  std::string name;
+	  std::string collisionWith;
+	  btVector3 linearVel,angularVel;
+	  std::list<btVector3> contactList;
+	  std::list<btVector3> contactList2;
+          Collision(){};
+	  Collision(std::string name, std::string with){this->name=name;collisionWith=with;};
+	};
+  	BulletPhysics * physics;
+	std::string target;
+	osg::Group *rootNode;
+public:
+	contactSensorToROS(osg::Group *rootNode,BulletPhysics * physics,std::string target, std::string topic, int rate);
+
+	void createPublisher(ros::NodeHandle &nh);
+
+	void publish();
+	
+	~contactSensorToROS();
+};		
 #endif
 		

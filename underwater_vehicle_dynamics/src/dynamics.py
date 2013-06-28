@@ -11,6 +11,7 @@ import sys
 from std_msgs.msg import Float64MultiArray 
 from geometry_msgs.msg import Pose 
 from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import WrenchStamped
 
 # More imports
 from numpy import *
@@ -156,9 +157,15 @@ class Dynamics :
         c = self.coriolisMatrix()
         d = self.dumpingMatrix()
         g = self.gravity()
+	###constant = [0,-1.0,0.0,0.0,0.0,0.0]
         c_v = dot((c-d), self.v)
-        v_dot = dot(self.IM, (t-c_v-g)) #t-c_v-g
+        v_dot = dot(self.IM, (t-c_v-g-self.collisionForce)) #t-c_v-g
         v_dot = squeeze(asarray(v_dot)) #Transforms a matrix into an array
+	for i in xrange(0,3):
+	  if (self.collisionForce[i]>0 and v_dot[i]>0) or (self.collisionForce[i]<0 and v_dot[i]<0): ##check if it's colliding do not accelerate in that direction
+	    v_dot[i]=0
+	  if (self.collisionForce[i]>0 and self.v[i]>0) or (self.collisionForce[i]<0 and self.v[i]<0):  ##check if it's colliding do not move in that direction
+	    self.v[i]=0
         return v_dot
         
 #
@@ -202,7 +209,9 @@ class Dynamics :
         for i in range(size(t)):
            self.u[i] = self.u[i]*self.actuators_gain[i]
         
-        
+    def updateCollision(self, force) :
+        self.collisionForce=[force.wrench.force.x,force.wrench.force.y,force.wrench.force.z,force.wrench.torque.x,force.wrench.torque.y,force.wrench.torque.z]        
+
     def thrustersDynamics(self, u):
         y = zeros(size(u))
         for i in range(size(u)):
@@ -248,6 +257,9 @@ class Dynamics :
         self.vehicle_name=self.namespace
         self.input_topic=sys.argv[2]
         self.output_topic=sys.argv[3]
+
+    #	Collision parameters
+	self.collisionForce = [0,0,0,0,0,0]
 
     #   Load dynamic parameters
         self.getConfig()
@@ -301,6 +313,7 @@ class Dynamics :
     #   Create Subscriber
 	#TODO: set the topic names as parameters
         rospy.Subscriber(self.input_topic, Float64MultiArray, self.updateThrusters)
+	rospy.Subscriber("/g500/contactSensor", WrenchStamped, self.updateCollision)
         
     def iterate(self):
         t1 = rospy.Time.now()

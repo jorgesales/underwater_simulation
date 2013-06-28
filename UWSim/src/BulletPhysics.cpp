@@ -63,7 +63,7 @@ protected:
 void BulletPhysics::stepSimulation(btScalar timeStep, int maxSubSteps=1, btScalar fixedTimeStep=btScalar(1.)/btScalar(60.) ) {
   //dynamicsWorld->debugDrawWorld();
   //printManifolds();
-  //cleanManifolds();
+  cleanManifolds();
   if(fluid)
     updateOceanSurface();
   ((btDynamicsWorld*)dynamicsWorld)->stepSimulation( timeStep, maxSubSteps, fixedTimeStep);
@@ -78,8 +78,10 @@ void BulletPhysics::printManifolds(){
     CollisionDataType * nombre2=(CollisionDataType *)colObj1->getUserPointer();
     double min=999999;
     for(int j=0;j<dispatcher->getManifoldByIndexInternal(i)->getNumContacts();j++)
-	if(dispatcher->getManifoldByIndexInternal(i)->getContactPoint(j).getDistance() < min)
+	if(dispatcher->getManifoldByIndexInternal(i)->getContactPoint(j).getDistance() < min){
 	  min=dispatcher->getManifoldByIndexInternal(i)->getContactPoint(j).getDistance();
+	  std::cout<<dispatcher->getManifoldByIndexInternal(i)->getContactPoint(j).getAppliedImpulse()<<std::endl;
+	}
     if(min<999999){
     std::cout<<i<<" ";
     if(nombre)

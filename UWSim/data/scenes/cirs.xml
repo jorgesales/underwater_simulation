@@ -366,6 +366,11 @@
       <name>multibeam</name>
       <topic>g500/multibeam</topic>
     </multibeamSensorToLaserScan>
+    <contactSensorToROS>
+      <name>girona500</name>
+      <topic>g500/contactSensor</topic>
+      <rate> 100 </rate>
+    </contactSensorToROS>
   </rosInterfaces>
 </UWSimScene>
 
