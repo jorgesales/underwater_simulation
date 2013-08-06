@@ -62,25 +62,37 @@ void PhysicsBuilder::loadPhysics(SceneBuilder * scene_builder,ConfigFile config)
     //NodeDataType * data;
     CollisionDataType * colData=new CollisionDataType(scene_builder->objects[i]->getName()," ",0);
 
-
     //Search for object in config, and look for physic properties
     boost::shared_ptr<PhysicProperties> pp;
-    for(std::list<Object>::iterator j=config.objects.begin();j!=config.objects.end();j++){
-      if(j->name==scene_builder->objects[i]->getName()){
-	pp=j->physicProperties;
+    for(std::list<Object>::iterator j=config.objects.begin();j!=config.objects.end();j++)
+    {
+      if(j->name==scene_builder->objects[i]->getName())
+      {
+          pp=j->physicProperties;
       }
-
     }
 
-    //Objects  objects with simple shapes will be added with water physics and rest with physics.
-    if(config.physicsWater.enable && (pp->csType=="box" || pp->csType=="sphere")){
-       physics->addFloatingObject(mt,scene_builder->objects[i],colData,pp);
+    btRigidBody* btphysics;
+
+    //Objects with simple shapes will be added with water physics and rest with physics.
+    if(config.physicsWater.enable && (pp->csType=="box" || pp->csType=="sphere"))
+    {
+       btphysics = physics->addFloatingObject(mt, scene_builder->objects[i], colData, pp);
     }
-    else{
-       physics->addObject(mt,scene_builder->objects[i],colData,pp);
+    else
+    {
+       btphysics = physics->addObject(mt, scene_builder->objects[i], colData, pp);
     }
     //wMb->setUserData(data); 
+
+    //store physiscs in object's data
+    osg::ref_ptr<NodeDataType> data = dynamic_cast<NodeDataType*> ( scene_builder->objects[i]->getUserData() );
+    data->btphysics = btphysics;
+    scene_builder->objects[i]->setUserData(data);
+
+
   }
+
 
   //Add ROSPhysInterfaces
   while(config.ROSPhysInterfaces.size()>0){

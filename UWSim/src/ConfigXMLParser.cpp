@@ -496,7 +496,9 @@ void ConfigFile::processGeometry(urdf::Geometry * geometry, Geometry * geom){
 	geom->radius=sphere->radius;
      }
   }
-  int ConfigFile::processVisual(boost::shared_ptr<const urdf::Visual> visual,Link &link, int nmat, std::vector<Material> &materials){
+
+  
+int ConfigFile::processVisual(boost::shared_ptr<const urdf::Visual> visual,Link &link, int nmat, std::vector<Material> &materials){
      processGeometry(visual->geometry.get(),link.geom.get());
      processPose(visual->origin,link.position,link.rpy,link.quat);
 

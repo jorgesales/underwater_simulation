@@ -160,18 +160,18 @@ bool SceneBuilder::loadScene(ConfigFile config)
 		osg::Node *object=scene->addObject(wMb, auxObject.file, &auxObject);
 		object->setName(auxObject.name);
 
-
+		NodeDataType * data;
 		
 		//FIXME: Do not trust on object name
 		if(auxObject.name!="terrain") {
-			NodeDataType * data= new NodeDataType(1,auxObject.position,auxObject.orientation);
-			object->setUserData(data);
+			data = new NodeDataType(1,auxObject.position,auxObject.orientation);
 		}
 		else {
-			NodeDataType * data= new NodeDataType(0);
-			object->setUserData(data);
+			data = new NodeDataType(0);
 		}
-                objects.push_back(object);
+		
+		object->setUserData(data);
+		objects.push_back(object);
 		config.objects.pop_front();
 	}
 

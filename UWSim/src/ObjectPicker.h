@@ -18,6 +18,7 @@
 
 //Node tracker that updates the ray coordinates from the tracked node position, computes intersections and 'picks' nodes
 class ObjectPickerUpdateCallback : public IntersectorUpdateCallback {
+
   virtual void operator() (osg::Node *node, osg::NodeVisitor *nv)  {
 	osg::Matrixd mStart, mEnd;
 	mStart = osg::computeLocalToWorld(nv->getNodePath() );
@@ -41,17 +42,21 @@ class ObjectPickerUpdateCallback : public IntersectorUpdateCallback {
 	    impact=intersection.nodePath;
 
 	    //search for catchable objects in nodepath
-	    for(osg::NodePath::iterator i=impact.begin();i!=impact.end();++i){
+	    for(osg::NodePath::iterator i=impact.begin();i!=impact.end();++i) {
 	      osg::ref_ptr<NodeDataType> data = dynamic_cast<NodeDataType*> (i[0]->getUserData());
-	      if(data!=NULL && data->catchable){
+	      if(data!=NULL && data->catchable) {
 
-	        std::cerr << "Picking object up." << std::endl;
+			std::cerr << "Picking object up." << std::endl;			
 
-		osg::Node * objectTransf=i[0]->getParent(0)->getParent(0);  //Object->linkBaseTransform->transform
+			//physics: set static object flag
+			btRigidBody * btphysics = data->btphysics;
+			btphysics->setCollisionFlags(btphysics->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+
+			osg::Node * objectTransf=i[0]->getParent(0)->getParent(0);  //Object->linkBaseTransform->transform
 	  
-		//Get coordinates to change them when changing position in graph
-		osg::Matrixd *originalpos=getWorldCoords(objectTransf);
-		osg::Matrixd *hand = getWorldCoords(trackNode);
+			//Get coordinates to change them when changing position in graph
+			osg::Matrixd *originalpos=getWorldCoords(objectTransf);
+			osg::Matrixd *hand = getWorldCoords(trackNode);
 	    	hand->invert(*hand);
 
 	    	//ADD node in hand, remove object from original position.
@@ -60,8 +65,6 @@ class ObjectPickerUpdateCallback : public IntersectorUpdateCallback {
 
 	    	osg::Matrixd matrix=*originalpos * *hand;
 	    	objectTransf->asTransform()->asMatrixTransform()->setMatrix(matrix);
-
-
 
 	    	picked=true;
 	      }
@@ -73,7 +76,10 @@ class ObjectPickerUpdateCallback : public IntersectorUpdateCallback {
 	osg::Node *trackNode;
 	bool picked;
 
-	ObjectPickerUpdateCallback(osg::Node *trackNode, double range, bool visible, osg::Node *root) : IntersectorUpdateCallback (range, visible, root) { this->trackNode=trackNode; picked=false;}
+	ObjectPickerUpdateCallback(osg::Node *trackNode, double range, bool visible, osg::Node *root) : IntersectorUpdateCallback (range, visible, root) {
+		 this->trackNode=trackNode;
+		 picked=false;
+	}
 };
 
 class ObjectPicker : public VirtualRangeSensor{

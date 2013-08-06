@@ -25,27 +25,39 @@
 #include <osgDB/Registry>
 #include <osgDB/FileNameUtils>
 #include <osg/Version>
+#include <BulletDynamics/Dynamics/btRigidBody.h>
 
 
-//Node data used to check if an object is catchable or not.
-class NodeDataType : public osg::Referenced{
-    public:
-       NodeDataType(int catcha,double origP[3]=NULL,double origR[3]=NULL){ 
-	 catchable=catcha;
-	 if(origP!=NULL){
-	   originalPosition[0]=origP[0];
-	   originalPosition[1]=origP[1];
-	   originalPosition[2]=origP[2];
-	}
-	 if(origR!=NULL){
-	   originalRotation[0]=origR[0];
-	   originalRotation[1]=origR[1];
-	   originalRotation[2]=origR[2];
-	}
-       }; 
-       int catchable;
-       double originalPosition[3],originalRotation[3];
-       
+/**\brief Node data used to store additonal information of nodes (osg::Node)  
+ * 
+ * This information will be attached to osg::Node by setUserData method. <br>
+ * This class must be subclassed from Referenced to allow automatic memory handling. <br> 
+ * Stored information:
+ *   - to check if an object is catchable or not.
+ *   - to keep a pointer to object's physics properties
+ */
+class NodeDataType : public osg::Referenced
+{
+  public:
+    NodeDataType(int catcha, double origP[3] = NULL, double origR[3] = NULL)
+    {
+        catchable=catcha;
+        if(origP!=NULL){
+            originalPosition[0]=origP[0];
+            originalPosition[1]=origP[1];
+            originalPosition[2]=origP[2];
+        }
+        if(origR!=NULL){
+            originalRotation[0]=origR[0];
+            originalRotation[1]=origR[1];
+            originalRotation[2]=origR[2];
+        }
+        btphysics = NULL;
+    }; 
+
+    int catchable;
+    double originalPosition[3],originalRotation[3];
+    btRigidBody * btphysics;                            //!< pointer to object's physics properties 
 };
 
 typedef std::vector<osg::Node*> nodeListType;
