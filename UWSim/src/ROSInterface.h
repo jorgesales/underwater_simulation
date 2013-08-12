@@ -353,6 +353,18 @@ public:
 	~RangeSensorToROSRange();
 };
 
+class ObjectPickedToROS : public ROSPublisherInterface {
+	ObjectPicker *op;
+public:
+	ObjectPickedToROS(ObjectPicker *op, std::string topic, int rate);
+
+	void createPublisher(ros::NodeHandle &nh);
+
+	void publish();
+	
+	~ObjectPickedToROS();
+};
+
 class MultibeamSensorToROS : public ROSPublisherInterface {
 	MultibeamSensor *MB;
 public:

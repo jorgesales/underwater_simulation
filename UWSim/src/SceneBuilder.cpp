@@ -246,7 +246,7 @@ bool SceneBuilder::loadScene(ConfigFile config)
 
 		if(rosInterface.type==ROSInterfaceInfo::RangeSensorToROSRange)
 			//Find corresponding VirtualRangeSensor Object on all the vehicles (look for rangeSensors and objectPickers)
-        		for (int j=0; j<nvehicle;j++) {
+            for (int j=0; j<nvehicle;j++) {
 				for (unsigned int c=0; c<iauvFile[j]->getNumRangeSensors(); c++)
 					if (iauvFile[j]->range_sensors[c].name==rosInterface.targetName)
 						iface=boost::shared_ptr<RangeSensorToROSRange>(new RangeSensorToROSRange(&(iauvFile[j]->range_sensors[c]),rosInterface.topic, rosInterface.rate));
@@ -255,6 +255,14 @@ bool SceneBuilder::loadScene(ConfigFile config)
 					if (iauvFile[j]->object_pickers[c].name==rosInterface.targetName)
 						iface=boost::shared_ptr<RangeSensorToROSRange>(new RangeSensorToROSRange(&(iauvFile[j]->object_pickers[c]),rosInterface.topic, rosInterface.rate));
 			}
+
+		if(rosInterface.type==ROSInterfaceInfo::ObjectPickedToROS)
+			//Find corresponding VirtualRangeSensor Object on all the vehicles (look for objectPickers)
+            for (int j=0; j<nvehicle;j++) {
+                for (unsigned int c=0; c<iauvFile[j]->getNumObjectPickers(); c++)
+					if (iauvFile[j]->object_pickers[c].name==rosInterface.targetName)
+						iface=boost::shared_ptr<ObjectPickedToROS>(new ObjectPickedToROS(&(iauvFile[j]->object_pickers[c]),rosInterface.topic, rosInterface.rate));
+            }
 
 		if(rosInterface.type==ROSInterfaceInfo::ImuToROSImu)
 			//Find corresponding VirtualCamera Object on all the vehicles

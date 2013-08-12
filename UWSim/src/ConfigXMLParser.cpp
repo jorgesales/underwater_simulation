@@ -337,6 +337,26 @@ void ConfigFile::processRangeSensor(const xmlpp::Node* node, rangeSensor &rs){
 	}
 }
 
+
+void ConfigFile::processObjectPicked(const xmlpp::Node* node, rangeSensor &op){
+	xmlpp::Node::NodeList list = node->get_children();
+	for(xmlpp::Node::NodeList::iterator iter = list.begin(); iter != list.end(); ++iter){
+		xmlpp::Node* child=dynamic_cast<const xmlpp::Node*>(*iter);
+
+		if(child->get_name()=="position")
+			extractPositionOrColor(child,op.position);
+		else if(child->get_name()=="relativeTo")
+			extractStringChar(child,op.linkName);
+		else if(child->get_name()=="orientation")
+			extractOrientation(child,op.orientation);
+		else if(child->get_name()=="name")
+			extractStringChar(child,op.name);
+		else if(child->get_name()=="visible")
+			extractIntChar(child,op.visible);
+	}
+}
+
+
 void ConfigFile::processImu(const xmlpp::Node* node, Imu &imu){
 	xmlpp::Node::NodeList list = node->get_children();
 	for(xmlpp::Node::NodeList::iterator iter = list.begin(); iter != list.end(); ++iter){
@@ -1070,6 +1090,8 @@ void ConfigFile::processROSInterfaces(const xmlpp::Node* node){
 			rosInterface.type=ROSInterfaceInfo::RangeImageSensorToROSImage;
 		} else if(child->get_name()=="RangeSensorToROSRange") {
 			rosInterface.type=ROSInterfaceInfo::RangeSensorToROSRange;
+		} else if(child->get_name()=="ObjectPickedToROS") {
+			rosInterface.type=ROSInterfaceInfo::ObjectPickedToROS;
 		} else if(child->get_name()=="ROSImageToHUD") {
 			rosInterface.type=ROSInterfaceInfo::ROSImageToHUD;
 		} else if(child->get_name()=="ROSTwistToPAT"){

@@ -27,7 +27,26 @@ using namespace std;
 #include <list>
 
 struct ROSInterfaceInfo{
-  typedef enum {Unknown, ROSOdomToPAT, PATToROSOdom, ROSJointStateToArm, ArmToROSJointState, VirtualCameraToROSImage, RangeSensorToROSRange,ROSImageToHUD, ROSTwistToPAT, ROSPoseToPAT, ImuToROSImu, PressureSensorToROS, GPSSensorToROS, DVLSensorToROS, RangeImageSensorToROSImage,multibeamSensorToLaserScan,SimulatedDevice, contactSensorToROS} type_t;
+  typedef enum { Unknown, 
+                 ROSOdomToPAT, 
+                 PATToROSOdom, 
+                 ROSJointStateToArm, 
+                 ArmToROSJointState, 
+                 VirtualCameraToROSImage, 
+                 RangeSensorToROSRange,
+                 ObjectPickedToROS,
+                 ROSImageToHUD, 
+                 ROSTwistToPAT, 
+                 ROSPoseToPAT, 
+                 ImuToROSImu, 
+                 PressureSensorToROS, 
+                 GPSSensorToROS, 
+                 DVLSensorToROS, 
+                 RangeImageSensorToROSImage,
+                 multibeamSensorToLaserScan,
+                 SimulatedDevice, 
+                 contactSensorToROS
+                } type_t;
   string subtype; //type of a SimulatedDevice
   std::map<std::string, std::string> values; //all configuration values for a SimulatedDevice
   string topic, infoTopic, targetName;
@@ -75,6 +94,16 @@ struct rangeSensor {
   int visible;
   int link;
   void init(){name="";linkName="";position[0]=0;position[1]=0;position[2]=0;orientation[0]=0;orientation[1]=0;orientation[2]=0;range=0;visible=0;}
+};
+
+struct ObjectPicked {
+  string name;
+  string linkName;
+  double position[3],orientation[3];
+  //double range;
+  int visible;
+  int link;
+  void init(){name="";linkName="";position[0]=0;position[1]=0;position[2]=0;orientation[0]=0;orientation[1]=0;orientation[2]=0;visible=0;}
 };
 
 struct Imu {
@@ -236,6 +265,7 @@ public://made process and extract methods public to be used in Simulated Devices
   void processVcam(const xmlpp::Node* node, Vcam &vcam);
   void processSLProjector(const xmlpp::Node* node, slProjector &slp);
   void processRangeSensor(const xmlpp::Node* node, rangeSensor &rs);
+  void processObjectPicked(const xmlpp::Node* node, rangeSensor &op);  
   void processImu(const xmlpp::Node* node, Imu &rs);
   void processPressureSensor(const xmlpp::Node* node, XMLPressureSensor &ps);
   void processDVLSensor(const xmlpp::Node* node, XMLDVLSensor &s);

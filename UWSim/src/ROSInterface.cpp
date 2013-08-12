@@ -679,7 +679,7 @@ void VirtualCameraToROSImage::publish() {
 	
 VirtualCameraToROSImage::~VirtualCameraToROSImage() {}
 
-
+/*------------------------------------------------------------------------------------------------*/
 
 RangeSensorToROSRange::RangeSensorToROSRange(VirtualRangeSensor *rangesensor, std::string topic, int rate): ROSPublisherInterface(topic,rate), rs(rangesensor) {
 }
@@ -702,11 +702,30 @@ void RangeSensorToROSRange::publish() {
     pub_.publish(r);
   }
 }
-	
+
 RangeSensorToROSRange::~RangeSensorToROSRange() {}
 
+/*------------------------------------------------------------------------------------------------*/
 
+ObjectPickedToROS::ObjectPickedToROS(ObjectPicker *op, std::string topic, int rate): ROSPublisherInterface(topic,rate), op(op) {
+}
 
+void ObjectPickedToROS::createPublisher(ros::NodeHandle &nh) {
+  ROS_INFO("ObjectPickedToROS publisher on topic %s",topic.c_str());
+  pub_ = nh.advertise<std_msgs::Bool>(topic, 1);
+}
+
+void ObjectPickedToROS::publish() {
+  if (op!=NULL) {
+    std_msgs::Bool msg;
+    msg.data = (op->node_tracker!=NULL) ? op->node_tracker->picked : false;
+    pub_.publish(msg);
+  }
+}
+
+ObjectPickedToROS::~ObjectPickedToROS() {}
+
+/*------------------------------------------------------------------------------------------------*/
 
 MultibeamSensorToROS::MultibeamSensorToROS(MultibeamSensor *multibeamSensor, std::string topic, int rate): ROSPublisherInterface(topic,rate), MB(multibeamSensor) {
 }

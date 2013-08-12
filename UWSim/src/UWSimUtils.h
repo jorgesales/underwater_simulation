@@ -53,6 +53,14 @@ class NodeDataType : public osg::Referenced
             originalRotation[2]=origR[2];
         }
         btphysics = NULL;
+
+/*      std::cout << "NodeDataType: " << "  catcha= " << catcha << std::endl;
+        if (origP!=NULL && origR!=NULL) {
+            std::cout << "origP= [" << origP[0] << ", " << origP[1] << ", " << origP[2] << "]  " 
+            << "origR= [" << origR[0] << ", " << origR[1] << ", " << origR[2] << "]  "
+            << std::endl;
+        }*/
+        
     }; 
 
     int catchable;
